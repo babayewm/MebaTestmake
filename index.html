@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEBA TestMaker</title>
+    
+    <style>
+        :root { 
+            --primary: #2563eb; --primary-dark: #1d4ed8; --success: #16a34a; --danger: #dc2626; 
+            --bg: #f3f4f6; --text: #1f2937; --card-bg: #ffffff; --border: #e5e7eb;
+            --input-bg: #ffffff; --input-border: #d1d5db; --q-bg: #f9fafb; --tab-bg: #e5e7eb; --tab-text: #4b5563;
+        }
+        [data-theme="dark"] {
+            --bg: #111827; --text: #f3f4f6; --card-bg: #1f2937; --border: #374151;
+            --input-bg: #374151; --input-border: #4b5563; --q-bg: #111827; --tab-bg: #374151; --tab-text: #9ca3af;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; transition: 0.3s; }
+        .container { max-width: 800px; margin: 0 auto; position: relative; }
+        
+        .top-header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
+        .app-title { color: var(--primary); font-size: 32px; margin: 0 0 10px 0; font-weight: 800; }
+        [data-theme="dark"] .app-title { color: #60a5fa; }
+
+        .license-badge {
+            display: inline-block;
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .card { background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 15px; background: var(--tab-bg); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; color: var(--tab-text); }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 12px; border: 1px solid var(--input-border); border-radius: 6px; box-sizing: border-box; margin-top: 5px; font-size: 14px; background: var(--input-bg); color: var(--text); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .file-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        
+        .btn { display:block; box-sizing: border-box; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 14px; text-align: center;}
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-warning { background: #d97706; }
+        .btn-danger { background: var(--danger); }
+        .btn-small-danger { background: var(--danger); width: auto; padding: 6px 12px; font-size: 12px; float: right; margin-top: 0;}
+        
+        .section-title { margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+
+        .q-list-item { background: var(--q-bg); border-left: 4px solid var(--primary); padding: 15px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border); position: relative;}
+        .q-list-item h4 { margin: 0 0 8px 0; padding-right: 50px; }
+
+        .quiz-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .quiz-question-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+        .quiz-option { display: block; padding: 15px; margin: 10px 0; background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; color: var(--text);}
+        .quiz-option:hover { border-color: var(--primary); }
+        .quiz-option.correct { background-color: #dcfce7 !important; border-color: #16a34a !important; color: #166534 !important; pointer-events: none;}
+        .quiz-option.wrong { background-color: #fee2e2 !important; border-color: #dc2626 !important; color: #991b1b !important; pointer-events: none;}
+        .quiz-option.disabled { pointer-events: none; opacity: 0.6; }
+
+        .theme-toggle-btn {
+            position: fixed; bottom: 20px; right: 20px; background: var(--card-bg); color: var(--text);
+            border: 2px solid var(--border); padding: 12px 20px; border-radius: 30px; cursor: pointer;
+            font-size: 16px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000;
+        }
+
+        .credit { text-align: center; margin-top: 30px; font-size: 13px; color: var(--tab-text); font-weight: 600; }
+
+        /* MODALLAR */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(5px);
+        }
+        .modal-card { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 480px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        
+        .client-id-box { background: var(--bg); border: 1px dashed var(--primary); padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; color: var(--text); margin-bottom: 15px; }
+        .client-id-box span { color: var(--primary); font-family: monospace; font-size: 16px; }
+
+        /* TOAST DUÝDURYŞ */
+        #toastMsg {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(31, 41, 55, 0.95); color: #ffffff; padding: 12px 24px;
+            border-radius: 30px; font-weight: bold; z-index: 10000; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            font-size: 14px; text-align: center; opacity: 0; display: none; transition: opacity 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2); pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="toastMsg"></div>
+
+<!-- AKTİWASİÝA MODALY -->
+<div id="authOverlay" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <div class="client-id-box">Siziň ID-ňiz: <span id="displayClientId">000000</span></div>
+        <h2 style="color: var(--primary); margin-top: 10px;">🔒 Aktivasiýa Kody</h2>
+        <p style="font-size: 13px; color: var(--tab-text); margin-bottom: 15px;">Ýokardaky ID belgiňizi admina iberiň we size berlen kody şu ýere giriziň:</p>
+        <input type="text" id="passCode" placeholder="Açar kody ýazyň...">
+        <div id="errorMsg" style="color: var(--danger); font-size: 13px; margin-top: 8px; display: none; font-weight: bold;">Ýalňyş ýa-da öň ulanylan kod!</div>
+        <button class="btn btn-primary" style="margin-top: 15px;" onclick="verifyLicenseKey()">Tassykla we Aç</button>
+    </div>
+</div>
+
+<!-- IMPORT SAÝLAW MODALY -->
+<div id="importChoiceModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <h3 style="margin-top:0; color:var(--primary);">📥 Import Görnüşini Saýlaň</h3>
+        <p style="font-size:14px; color:var(--tab-text); margin-bottom:20px;">Testi näme arkaly girizmek isleýärsiňiz?</p>
+        <button class="btn btn-primary" style="margin-bottom: 10px;" onclick="chooseImportFile()">📁 Telefondan Faýl Saýla (.txt / .mb)</button>
+        <button class="btn btn-warning" style="margin-bottom: 10px;" onclick="chooseImportManual()">✍️ Kody Elde Ýaz / Ýelme</button>
+        <button class="btn btn-danger" onclick="closeImportChoiceModal()">Ýap</button>
+    </div>
+</div>
+
+<!-- KOD GÖÇÜRMEK WE EXPORT MODALY -->
+<div id="codeModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <h3 id="codeModalTitle" style="margin-top:0; color:var(--primary);">📤 Test Export Kody</h3>
+        <p id="codeModalDesc" style="font-size:13px; color:var(--tab-text); text-align:left;"></p>
+        <textarea id="codeModalArea" rows="6" placeholder="Kody şu ýere ýazyp/ýelmeiň..."></textarea>
+        
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+            <button id="codeModalCopyBtn" class="btn btn-success" style="margin:0;" onclick="copyCodeFromModal()">📋 Kody Göçür (Bufer)</button>
+            <button id="codeModalImportBtn" class="btn btn-primary" style="display:none; margin:0;" onclick="applyImportCode()">📥 Kody Giriz (Import)</button>
+            <button class="btn btn-danger" style="margin:0;" onclick="closeCodeModal()">Ýap</button>
+        </div>
+    </div>
+</div>
+
+<button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()">🌙 Gije Modu</button>
+
+<div class="container">
+    <div class="top-header">
+        <h1 class="app-title">MEBA TestMaker📝</h1>
+        <div id="licenseBadge" class="license-badge" style="display:none;">⏳ Galan wagt: Kesgitlenýär...</div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('maker')">⚙️ Sorag Ýükle / Taýýarla</button>
+        <button class="tab-btn" onclick="startQuiz()">🚀 Testi Başla</button>
+    </div>
+
+    <!-- 1. BÖLÜM -->
+    <div id="maker-tab" class="tab-content active">
+        
+        <div class="card">
+            <h3 class="section-title">✍️ Elden Sorag Goş</h3>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="qText" placeholder="Sorag tekstini ýazyň...">
+                <div class="grid-2">
+                    <input type="text" id="optA" placeholder="A Warianty">
+                    <input type="text" id="optB" placeholder="B Warianty">
+                    <input type="text" id="optC" placeholder="C Warianty">
+                    <input type="text" id="optD" placeholder="D Warianty">
+                </div>
+                <select id="qAns">
+                    <option value="A">Dogry Jogap: A Warianty</option>
+                    <option value="B">Dogry Jogap: B Warianty</option>
+                    <option value="C">Dogry Jogap: C Warianty</option>
+                    <option value="D">Dogry Jogap: D Warianty</option>
+                </select>
+                <button class="btn btn-primary" onclick="addManual()">Soragy Sanawa Goş</button>
+            </div>
+            
+            <hr style="border: 1px solid var(--border); margin: 20px 0;">
+            
+            <h4 style="margin:0 0 10px 0;">📋 Göçür / Giriz bilen Goş</h4>
+            <textarea id="pasteArea" rows="3" placeholder="Sorag | A | B | C | D | Jogap görnüşinde giriziň..."></textarea>
+            <button class="btn btn-success" onclick="importFromPaste()">Girizilen Maglumaty Ýükle</button>
+        </div>
+
+        <div class="card">
+            <h3 class="section-title">📁 Test Faýllaryny Dolandyrmak</h3>
+            <label style="font-size:13px; font-weight:bold;">Aktiwen Faýly Saýlaň:</label>
+            <select id="fileSelect" onchange="changeActiveFile()"></select>
+
+            <div class="file-actions-grid">
+                <button class="btn btn-primary" onclick="createNewFile()">➕ Täze Faýl Goş</button>
+                <button class="btn btn-danger" onclick="deleteCurrentFile()">🗑️ Faýly Poz</button>
+                <button class="btn btn-warning" onclick="exportCurrentFile()">📤 Export Kody</button>
+                <button class="btn btn-warning" onclick="openImportModal()">📥 Import (.txt / .mb)</button>
+            </div>
+            <input type="file" id="importMBInput" accept=".txt,.mb,*/*" style="display:none;" onchange="importMBFile(event)">
+        </div>
+
+        <div class="card">
+            <h3 class="section-title">📚 Soraglar Sanawy (<span id="qCount">0</span> Sorag)</h3>
+            <div id="questionList"><i style="color:var(--tab-text);">Entäk sorag goşulmady.</i></div>
+        </div>
+    </div>
+
+    <!-- 2. BÖLÜM -->
+    <div id="quiz-tab" class="tab-content">
+        <div class="card">
+            <div id="quizContainer">
+                <div style="text-align: center; color: var(--tab-text); padding: 30px;">Testi başlamak üçin sorag goşuň.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="credit">made by Babaýew</div>
+</div>
+
+<script>
+    let isDarkMode = false;
+    let quizFiles = [];
+    let activeFileId = null;
+    let currentExportCode = "";
+
+    window.onload = function() {
+        initTheme();
+        initClientId();
+        checkLicense();
+        initFiles();
+        setInterval(checkLicense, 1000);
+    }
+
+    function showToast(msg) {
+        let toast = document.getElementById('toastMsg');
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.opacity = '1'; }, 10);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => { toast.style.display = 'none'; }, 300);
+        }, 2500);
+    }
+
+    function initTheme() {
+        let savedTheme = localStorage.getItem('meba_theme');
+        if (savedTheme === 'dark') {
+            isDarkMode = true;
+            document.body.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').innerHTML = '☀️ Gündiz Modu';
+        } else {
+            isDarkMode = false;
+            document.body.setAttribute('data-theme', '');
+            document.getElementById('themeBtn').innerHTML = '🌙 Gije Modu';
+        }
+    }
+
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        document.body.setAttribute('data-theme', isDarkMode ? 'dark' : '');
+        document.getElementById('themeBtn').innerHTML = isDarkMode ? '☀️ Gündiz Modu' : '🌙 Gije Modu';
+        localStorage.setItem('meba_theme', isDarkMode ? 'dark' : 'light');
+    }
+
+    function initClientId() {
+        let clientId = localStorage.getItem('meba_client_id');
+        if(!clientId) {
+            clientId = Math.floor(100000 + Math.random() * 900000).toString();
+            localStorage.setItem('meba_client_id', clientId);
+        }
+        document.getElementById('displayClientId').innerText = clientId;
+    }
+
+    function checkLicense() {
+        let isAdmin = localStorage.getItem('meba_admin') === 'true';
+        let badge = document.getElementById('licenseBadge');
+
+        if(isAdmin) {
+            document.getElementById('authOverlay').style.display = 'none';
+            badge.style.display = 'inline-block';
+            badge.innerText = "⏳ Galan wagt: ∞";
+            badge.style.borderColor = "var(--primary)";
+            badge.style.color = "var(--primary)";
+            return;
+        }
+
+        let expireTime = localStorage.getItem('meba_expire');
+        let now = new Date().getTime();
+
+        if(!expireTime || now > parseInt(expireTime)) {
+            localStorage.removeItem('meba_expire');
+            document.getElementById('authOverlay').style.display = 'flex';
+            badge.style.display = 'none';
+        } else {
+            let timeLeft = parseInt(expireTime) - now;
+            let daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            let hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            badge.style.display = 'inline-block';
+            badge.style.borderColor = "var(--primary)";
+            badge.style.color = "var(--primary)";
+            if(daysLeft > 0) {
+                badge.innerText = `⏳ Galan wagt: ${daysLeft} gün ${hoursLeft} sagat`;
+            } else {
+                let minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                badge.innerText = `⏳ Galan wagt: ${hoursLeft} sagat ${minutesLeft} minut`;
+            }
+        }
+    }
+
+    function verifyLicenseKey() {
+        let inputKey = document.getElementById('passCode').value.trim();
+        let errorMsg = document.getElementById('errorMsg');
+        let clientId = localStorage.getItem('meba_client_id');
+
+        if(!inputKey) return;
+
+        if(inputKey === "Adminmerdan") {
+            localStorage.setItem('meba_admin', 'true');
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('passCode').value = '';
+            errorMsg.style.display = 'none';
+            checkLicense();
+            showToast("Admin tertibinde açyldy!");
+            return;
+        }
+
+        try {
+            let decodedData = atob(inputKey);
+            let parts = decodedData.split('|');
+
+            if(parts.length >= 3 && parts[0] === "MEBA") {
+                let targetId = parts[1];
+                let expireTime = parseInt(parts[2]);
+                let now = new Date().getTime();
+
+                if(targetId !== clientId) {
+                    errorMsg.innerText = "Bu kod başga ulanyja degişli!";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                let usedKeys = JSON.parse(localStorage.getItem('meba_used_keys')) || [];
+                if(usedKeys.includes(inputKey)) {
+                    errorMsg.innerText = "Bu kod eýýäm ulanylan!";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                if(expireTime > now) {
+                    usedKeys.push(inputKey);
+                    localStorage.setItem('meba_used_keys', JSON.stringify(usedKeys));
+                    localStorage.removeItem('meba_admin');
+                    
+                    localStorage.setItem('meba_expire', expireTime);
+                    document.getElementById('authOverlay').style.display = 'none';
+                    document.getElementById('passCode').value = '';
+                    errorMsg.style.display = 'none';
+                    checkLicense();
+                    return;
+                } else {
+                    errorMsg.innerText = "Bu kodyň möhleti geçen!";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+            }
+        } catch(e) {}
+
+        errorMsg.innerText = "Ýalňyş ýa-da nädogry formatdaky kod!";
+        errorMsg.style.display = 'block';
+    }
+
+    function initFiles() {
+        let storedFiles = localStorage.getItem('meba_quiz_files');
+        if(storedFiles) {
+            quizFiles = JSON.parse(storedFiles);
+        } else {
+            let oldQuestions = JSON.parse(localStorage.getItem('meba_questions')) || [];
+            quizFiles = [{
+                id: 'file_' + Date.now(),
+                name: 'Esasy Test Faýly',
+                questions: oldQuestions
+            }];
+        }
+
+        activeFileId = localStorage.getItem('meba_active_file_id');
+        if(!activeFileId || !quizFiles.find(f => f.id === activeFileId)) {
+            activeFileId = quizFiles[0].id;
+        }
+
+        saveFiles();
+        renderFileSelect();
+        updateList();
+    }
+
+    function saveFiles() {
+        localStorage.setItem('meba_quiz_files', JSON.stringify(quizFiles));
+        localStorage.setItem('meba_active_file_id', activeFileId);
+    }
+
+    function renderFileSelect() {
+        let select = document.getElementById('fileSelect');
+        select.innerHTML = quizFiles.map(f => `
+            <option value="${f.id}" ${f.id === activeFileId ? 'selected' : ''}>
+                📄 ${f.name} (${f.questions.length} sorag)
+            </option>
+        `).join('');
+    }
+
+    function getActiveFile() {
+        return quizFiles.find(f => f.id === activeFileId);
+    }
+
+    function changeActiveFile() {
+        activeFileId = document.getElementById('fileSelect').value;
+        saveFiles();
+        updateList();
+    }
+
+    function createNewFile() {
+        let fileName = prompt("Täze test faýlynyň adyny giriziň:", "Täze Test");
+        if(!fileName || fileName.trim() === "") return;
+
+        let newFile = {
+            id: 'file_' + Date.now(),
+            name: fileName.trim(),
+            questions: []
+        };
+
+        quizFiles.push(newFile);
+        activeFileId = newFile.id;
+        saveFiles();
+        renderFileSelect();
+        updateList();
+    }
+
+    function deleteCurrentFile() {
+        if(quizFiles.length <= 1) {
+            showToast("Iň bolmanda bir faýl bolmaly!");
+            return;
+        }
+
+        let currentFile = getActiveFile();
+        if(confirm(`"${currentFile.name}" faýlyny hakykatdan hem pozmak isleýärsiňizmi?`)) {
+            quizFiles = quizFiles.filter(f => f.id !== activeFileId);
+            activeFileId = quizFiles[0].id;
+            saveFiles();
+            renderFileSelect();
+            updateList();
+        }
+    }
+
+    function encodeMBData(fileObj) {
+        let compactQuestions = fileObj.questions.map(q => {
+            let correctIdx = q.options.indexOf(q.correctAnswerText);
+            if(correctIdx === -1) correctIdx = 0;
+            return [q.text, q.options[0]||"", q.options[1]||"", q.options[2]||"", q.options[3]||"", correctIdx];
+        });
+
+        let compactObj = {
+            n: fileObj.name,
+            q: compactQuestions
+        };
+
+        let jsonStr = JSON.stringify(compactObj);
+        return "M1:" + btoa(unescape(encodeURIComponent(jsonStr)));
+    }
+
+    function decodeMBData(rawStr) {
+        rawStr = rawStr.trim();
+
+        if(rawStr.startsWith("M1:")) {
+            rawStr = rawStr.substring(3);
+        } else if(rawStr.startsWith("MEBA_MB_")) {
+            rawStr = rawStr.substring(8);
+        }
+
+        try {
+            let jsonStr = decodeURIComponent(escape(atob(rawStr)));
+            let data = JSON.parse(jsonStr);
+
+            if(data.q && Array.isArray(data.q)) {
+                let questions = data.q.map(item => {
+                    let opts = [item[1], item[2], item[3], item[4]];
+                    let cIdx = item[5] !== undefined ? item[5] : 0;
+                    return {
+                        text: item[0],
+                        options: opts,
+                        correctAnswerText: opts[cIdx] || opts[0]
+                    };
+                });
+                return { name: data.n || "Gelen Test", questions: questions };
+            }
+
+            if(data.questions) return data;
+
+        } catch(e) {
+            try { return JSON.parse(rawStr); } catch(err) { return null; }
+        }
+        return null;
+    }
+
+    function openImportModal() {
+        document.getElementById('importChoiceModal').style.display = 'flex';
+    }
+
+    function closeImportChoiceModal() {
+        document.getElementById('importChoiceModal').style.display = 'none';
+    }
+
+    function chooseImportFile() {
+        closeImportChoiceModal();
+        document.getElementById('importMBInput').click();
+    }
+
+    function chooseImportManual() {
+        closeImportChoiceModal();
+        showCodeModal("📥 Test Import", "Size ugradylan kody aşakdaky öýjüge ýelmeň (Paste ediň):", "", true);
+    }
+
+    function exportCurrentFile() {
+        let activeFile = getActiveFile();
+        if(!activeFile || activeFile.questions.length === 0) {
+            showToast("Azyndan 1 sorag bolmaly!");
+            return;
+        }
+
+        currentExportCode = encodeMBData(activeFile);
+        showCodeModal("📤 Test Export Kody", "Aşakdaky kody göçürip alyň:", currentExportCode, false);
+    }
+
+    function importMBFile(event) {
+        let file = event.target.files[0];
+        if(!file) return;
+
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            processImportString(e.target.result);
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function applyImportCode() {
+        let text = document.getElementById('codeModalArea').value;
+        if(!text) { showToast("Kod giriziň!"); return; }
+        processImportString(text);
+        closeCodeModal();
+    }
+
+    function processImportString(rawString) {
+        let importedData = decodeMBData(rawString);
+        if(importedData && importedData.questions && Array.isArray(importedData.questions) && importedData.questions.length > 0) {
+            let newFile = {
+                id: 'file_' + Date.now(),
+                name: importedData.name ? importedData.name + " (Gelen)" : "Gelen Test",
+                questions: importedData.questions
+            };
+            quizFiles.push(newFile);
+            activeFileId = newFile.id;
+            saveFiles();
+            renderFileSelect();
+            updateList();
+            showToast("Test üstünlikli ýüklendi!");
+        } else {
+            showToast("Nädogry kod ýa-da faýl formaty!");
+        }
+    }
+
+    function showCodeModal(title, desc, code, isImport) {
+        document.getElementById('codeModalTitle').innerText = title;
+        document.getElementById('codeModalDesc').innerText = desc;
+        let area = document.getElementById('codeModalArea');
+        area.value = code;
+        
+        let copyBtn = document.getElementById('codeModalCopyBtn');
+        let importBtn = document.getElementById('codeModalImportBtn');
+
+        if(isImport) {
+            copyBtn.style.display = 'none';
+            importBtn.style.display = 'block';
+            area.readOnly = false;
+        } else {
+            copyBtn.style.display = 'block';
+            importBtn.style.display = 'none';
+            area.readOnly = true;
+            try {
+                area.select();
+                document.execCommand('copy');
+            } catch(err) {}
+        }
+
+        document.getElementById('codeModal').style.display = 'flex';
+    }
+
+    function closeCodeModal() {
+        document.getElementById('codeModal').style.display = 'none';
+    }
+
+    function copyCodeFromModal() {
+        let area = document.getElementById('codeModalArea');
+        area.select();
+        area.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            showToast("Kod göçürildi (Kopiýalandy)!");
+        } catch(e) {
+            navigator.clipboard.writeText(area.value).then(() => {
+                showToast("Kod göçürildi!");
+            }).catch(() => {
+                showToast("Göçürip bolmady, özüňiz saýlap alyň.");
+            });
+        }
+    }
+
+    let currentQIndex = 0;
+    let score = 0;
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        if(tabId === 'maker') {
+            document.getElementById('maker-tab').classList.add('active');
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        } else {
+            document.getElementById('quiz-tab').classList.add('active');
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        }
+    }
+
+    function importFromPaste() {
+        let text = document.getElementById('pasteArea').value.trim();
+        if(!text) return;
+        let lines = text.split('\n');
+        let added = 0;
+        let activeFile = getActiveFile();
+
+        lines.forEach(line => {
+            let cols = line.split('\t').map(c => c.trim());
+            if(cols.length >= 6) {
+                let opts = [cols[1], cols[2], cols[3], cols[4]];
+                let idx = cols[5].toUpperCase().charCodeAt(0) - 65;
+                if(idx >= 0 && idx <= 3 && opts[idx]) {
+                    activeFile.questions.push({ text: cols[0], options: opts, correctAnswerText: opts[idx] });
+                    added++;
+                }
+            }
+        });
+        if(added > 0) { 
+            showToast(added + " sorag goşuldy!"); 
+            document.getElementById('pasteArea').value = ''; 
+            saveFiles();
+            renderFileSelect();
+            updateList(); 
+        } else { 
+            showToast("Maglumat formaty ýalňyş!"); 
+        }
+    }
+
+    function addManual() {
+        let q = document.getElementById('qText').value;
+        let opts = [ document.getElementById('optA').value, document.getElementById('optB').value, document.getElementById('optC').value, document.getElementById('optD').value ];
+        let idx = document.getElementById('qAns').selectedIndex;
+        if(!q || !opts[0] || !opts[1] || !opts[2] || !opts[3]) { showToast("Ähli meýdançalary dolduryň!"); return; }
+        
+        let activeFile = getActiveFile();
+        activeFile.questions.push({ text: q, options: opts, correctAnswerText: opts[idx] });
+        
+        saveFiles();
+        renderFileSelect();
+        updateList();
+        
+        document.getElementById('qText').value = '';
+        document.querySelectorAll('.grid-2 input').forEach(i => i.value = '');
+        showToast("Sorag goşuldy!");
+    }
+
+    function deleteQuestion(index) { 
+        let activeFile = getActiveFile();
+        activeFile.questions.splice(index, 1); 
+        saveFiles();
+        renderFileSelect();
+        updateList(); 
+    }
+
+    function updateList() {
+        let activeFile = getActiveFile();
+        let questions = activeFile ? activeFile.questions : [];
+
+        document.getElementById('qCount').innerText = questions.length;
+        if(questions.length === 0) {
+            document.getElementById('questionList').innerHTML = '<i style="color:var(--tab-text);">Bu faýlda entäk sorag goşulmady.</i>';
+            return;
+        }
+        document.getElementById('questionList').innerHTML = questions.map((q, i) => `
+            <div class="q-list-item">
+                <button class="btn btn-small-danger" onclick="deleteQuestion(${i})">🗑️ Poz</button>
+                <h4>${i+1}. ${q.text}</h4>
+                <div style="font-size:13px; color:var(--tab-text);">A: ${q.options[0]} | B: ${q.options[1]} | C: ${q.options[2]} | D: ${q.options[3]}</div>
+                <div style="font-size:13px; font-weight:bold; color:#16a34a; margin-top:5px;">✓ Dogry Jogap: ${q.correctAnswerText}</div>
+            </div>
+        `).join('');
+    }
+
+    function startQuiz() {
+        let activeFile = getActiveFile();
+        if(!activeFile || activeFile.questions.length === 0) { showToast("Ilki sorag goşuň!"); return; }
+        switchTab('quiz');
+        currentQIndex = 0; score = 0;
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        let activeFile = getActiveFile();
+        let questions = activeFile.questions;
+        let q = questions[currentQIndex];
+        let container = document.getElementById('quizContainer');
+        let shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+        
+        container.innerHTML = `
+            <div class="quiz-header">
+                <span style="font-weight:bold; font-size:18px; color:var(--primary);">Sorag ${currentQIndex + 1} / ${questions.length}</span>
+                <span style="font-weight:bold; color:var(--text);">Utuk: ${score}</span>
+            </div>
+            <div class="quiz-question-text">${q.text}</div>
+            <div id="optionsWrapper">
+                ${shuffledOptions.map(opt => `<div class="quiz-option" onclick="checkAnswer(this)">${opt}</div>`).join('')}
+            </div>
+            <button id="nextBtn" class="btn btn-primary" style="display:none; margin-top:20px;" onclick="nextQuestion()">Indiki Sorag ➡️</button>
+        `;
+    }
+
+    function checkAnswer(selectedElement) {
+        let activeFile = getActiveFile();
+        let q = activeFile.questions[currentQIndex];
+        let allOptions = document.querySelectorAll('.quiz-option');
+        let selectedText = selectedElement.innerText.trim();
+        allOptions.forEach(opt => opt.classList.add('disabled'));
+
+        if(selectedText === q.correctAnswerText) {
+            selectedElement.classList.add('correct');
+            score++;
+            document.querySelector('.quiz-header span:nth-child(2)').innerText = `Utuk: ${score}`;
+        } else {
+            selectedElement.classList.add('wrong');
+            allOptions.forEach(opt => { if(opt.innerText.trim() === q.correctAnswerText) opt.classList.add('correct'); });
+        }
+        let nextBtn = document.getElementById('nextBtn');
+        nextBtn.style.display = 'block';
+        if(currentQIndex === activeFile.questions.length - 1) {
+            nextBtn.innerText = "Synagy Gutar we Netijäni Gör 🏁";
+            nextBtn.className = "btn btn-success";
+        }
+    }
+
+    function nextQuestion() {
+        let activeFile = getActiveFile();
+        if(currentQIndex < activeFile.questions.length - 1) { 
+            currentQIndex++; 
+            renderQuestion(); 
+        } else {
+            let container = document.getElementById('quizContainer');
+            let percent = Math.round((score / activeFile.questions.length) * 100);
+            container.innerHTML = `
+                <div style="background:var(--card-bg); color:var(--success); padding:30px; border-radius:10px; text-align:center; font-size:22px; font-weight:bold; border:2px solid var(--success);">
+                    🎉 Synag Tamamlandy!<br><br>Dogry Jogap: ${score} / ${activeFile.questions.length}<br>Üstünlük: %${percent}
+                </div>
+                <button class="btn btn-primary" onclick="switchTab('maker')" style="margin-top:20px;">Esasy Sahypa Dolan</button>
+            `;
+        }
+    }
+</script>
+</body>
+</html>
